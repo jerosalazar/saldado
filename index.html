@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saldado — Demo Corregida</title>
+<style>
+  :root {
+    --purple-deep: #3D1A6E;
+    --purple-mid: #5B2D9E;
+    --purple-light: #9B6FD4;
+    --pink: #E0419A;
+    --pink-light: #F472B6;
+    --gradient: linear-gradient(135deg, #5B2D9E 0%, #E0419A 100%);
+    --white: #FFFFFF;
+    --gray-50: #FAF8FD;
+    --gray-100: #F3F0FA;
+    --gray-200: #E8E0F5;
+    --gray-300: #D6C9EB;
+    --gray-400: #9CA3AF;
+    --gray-600: #6B7280;
+    --green: #22C55E;
+    --green-soft: #EAF8F0;
+    --red: #EF4444;
+    --font: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(circle at top, #34125d 0%, #1a0a2e 45%, #10061c 100%);
+    font-family: var(--font);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .demo-wrapper { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:430px; }
+  .demo-header { display:flex; align-items:center; gap:10px; color:white; font-size:13px; opacity:.78; letter-spacing:.08em; text-transform:uppercase; }
+  .demo-dot { width:7px; height:7px; border-radius:50%; background:var(--pink); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .phone {
+    width:380px; height:780px; background:white; border-radius:44px;
+    box-shadow: 0 0 0 3px #111122, 0 0 0 6px #3a3a5e, 0 30px 80px rgba(0,0,0,.6);
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+  }
+  .notch { position:absolute; top:8px; left:50%; transform:translateX(-50%); width:118px; height:28px; background:#000; border-radius:0 0 18px 18px; z-index:10; }
+  .screen { display:none; flex-direction:column; flex:1; overflow:hidden; background:white; }
+  .screen.active { display:flex; }
+  .top-safe { padding:12px 24px 4px; display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700; flex-shrink:0; background:white; }
+  .scroll-area { flex:1; overflow-y:auto; scrollbar-width:none; }
+  .scroll-area::-webkit-scrollbar { display:none; }
+
+  .app-bar { display:flex; justify-content:space-between; align-items:center; padding:12px 20px 8px; flex-shrink:0; background:white; }
+  .app-bar-title { display:flex; align-items:center; gap:8px; font-weight:800; font-size:18px; color:var(--purple-deep); }
+  .whale-logo { width:30px; height:30px; background:var(--gradient); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .app-bar-actions { display:flex; gap:10px; }
+  .icon-btn { width:36px; height:36px; border-radius:50%; background:var(--gray-100); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:.2s; }
+  .icon-btn:hover { transform:translateY(-1px); background:var(--gray-200); }
+  .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--pink); border-radius:50%; border:2px solid white; }
+
+  .screen-header { display:flex; align-items:center; gap:10px; padding:12px 20px; flex-shrink:0; background:white; }
+  .back-btn { width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--purple-mid); font-size:25px; border-radius:50%; transition:.2s; }
+  .back-btn:hover { background:var(--gray-100); }
+  .screen-title { font-size:19px; font-weight:800; color:var(--purple-deep); }
+  .screen-title.center { text-align:center; flex:1; margin-left:-32px; }
+
+  .navbar { display:flex; justify-content:space-between; align-items:center; padding:11px 20px; border-top:1px solid var(--gray-200); background:white; flex-shrink:0; }
+  .nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--gray-400); cursor:pointer; transition:.2s; padding:4px 8px; border-radius:12px; }
+  .nav-item:hover { transform:translateY(-1px); color:var(--purple-light); }
+  .nav-item.active { color:var(--purple-mid); font-weight:700; }
+  .nav-item svg { width:20px; height:20px; }
+  .nav-fab { width:50px; height:50px; background:var(--gradient); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 16px rgba(91,45,158,.4); transition:.2s; color:white; font-size:24px; font-weight:900; }
+  .nav-fab:hover { transform:scale(1.05); }
+
+  .splash-screen { flex:1; background:linear-gradient(180deg,#fff 0%,#fff 60%,#f0e4ff 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; position:relative; overflow:hidden; }
+  .splash-screen::before { content:""; position:absolute; top:-120px; right:-90px; width:260px; height:260px; border-radius:45%; background:rgba(224,65,154,.18); }
+  .splash-screen::after { content:""; position:absolute; bottom:-70px; left:-50px; width:420px; height:190px; background:rgba(91,45,158,.22); border-radius:50% 50% 0 0; }
+  .splash-whale { font-size:76px; z-index:1; animation:whale-bob 2s ease-in-out infinite; }
+  @keyframes whale-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .splash-name { font-size:50px; font-weight:950; letter-spacing:-2px; color:var(--purple-deep); z-index:1; }
+  .splash-tag { font-size:14px; color:var(--purple-mid); max-width:260px; line-height:1.45; font-weight:700; z-index:1; }
+  .splash-tag span { color:var(--pink); }
+  .splash-btn { margin-top:18px; background:var(--gradient); color:white; border:none; border-radius:20px; padding:14px 48px; font-size:16px; font-weight:800; cursor:pointer; transition:.2s; box-shadow:0 4px 24px rgba(91,45,158,.32); z-index:1; }
+  .splash-btn:hover { transform:scale(1.04); }
+
+  .wallet-card { margin:8px 16px 16px; background:var(--gradient); border-radius:20px; padding:20px; color:white; position:relative; overflow:hidden; flex-shrink:0; }
+  .wallet-card::after { content:'🐋'; position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:54px; opacity:.32; }
+  .wallet-label { font-size:12px; opacity:.9; margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+  .wallet-amount { font-size:33px; font-weight:900; letter-spacing:-1px; }
+  .wallet-sub { display:inline-flex; align-items:center; gap:4px; margin-top:12px; background:rgba(255,255,255,.2); border-radius:20px; padding:5px 12px; font-size:12px; }
+
+  .section-header { display:flex; justify-content:space-between; align-items:center; padding:8px 20px 10px; flex-shrink:0; }
+  .section-title { font-weight:800; font-size:15px; color:var(--purple-deep); }
+  .section-link { font-size:12px; color:var(--purple-mid); font-weight:700; cursor:pointer; }
+  .quick-actions { display:flex; gap:8px; padding:0 16px 16px; flex-shrink:0; }
+  .qa-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 8px; background:var(--gray-100); border-radius:14px; cursor:pointer; transition:.2s; font-size:10px; color:var(--gray-600); font-weight:700; }
+  .qa-btn:hover { background:var(--gray-200); transform:translateY(-2px); }
+  .qa-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .qa-icon.purple { background:rgba(91,45,158,.12); }
+  .qa-icon.pink { background:rgba(224,65,154,.12); }
+  .qa-icon.teal { background:rgba(20,184,166,.12); }
+  .qa-icon.blue { background:rgba(59,130,246,.12); }
+
+  .group-list { padding:0 16px 8px; display:flex; flex-direction:column; gap:4px; }
+  .group-item { display:flex; align-items:center; gap:12px; padding:12px 14px; background:white; border-radius:14px; cursor:pointer; transition:.2s; border:1px solid transparent; }
+  .group-item:hover { border-color:var(--gray-200); transform:translateX(2px); box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .group-avatar { width:44px; height:44px; border-radius:14px; background:var(--gradient); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .group-info { flex:1; min-width:0; }
+  .group-name { font-weight:800; font-size:14px; color:var(--purple-deep); }
+  .group-sub { font-size:11px; color:var(--gray-400); margin-top:1px; }
+  .group-balance { text-align:right; }
+  .balance-label { font-size:10px; color:var(--gray-400); }
+  .balance-amount { font-size:14px; font-weight:800; }
+  .positive { color:var(--green)!important; }
+  .negative { color:var(--pink)!important; }
+
+  .retiro-info { margin:4px 16px 16px; padding:12px 16px; background:rgba(91,45,158,.06); border-radius:14px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .retiro-info-text { flex:1; font-size:11px; color:var(--gray-600); line-height:1.5; }
+  .retiro-info-text .gratis { color:var(--green); font-weight:700; }
+  .retiro-info-text .comision { color:var(--pink); font-weight:700; }
+
+  .tabs { display:flex; border-bottom:2px solid var(--gray-200); padding:0 16px; margin-bottom:12px; flex-shrink:0; }
+  .tab { padding:10px 14px; font-size:13px; font-weight:700; color:var(--gray-400); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:.2s; }
+  .tab.active { color:var(--purple-mid); border-color:var(--purple-mid); }
+
+  .group-hero { margin:0 16px 16px; background:var(--gradient); border-radius:20px; padding:16px 20px; color:white; flex-shrink:0; }
+  .group-hero-title { font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .group-hero-sub { font-size:12px; opacity:.8; margin-top:2px; }
+  .group-hero-stats { display:flex; gap:24px; margin-top:12px; }
+  .hero-stat-label { font-size:10px; opacity:.8; }
+  .hero-stat-value { font-size:18px; font-weight:900; margin-top:2px; }
+  .hero-stat-value.positive { color:#A7F3D0; }
+  .hero-stat-value.negative { color:#FFD0E8; }
+
+  .member-row { display:flex; gap:8px; padding:8px 16px 12px; overflow-x:auto; scrollbar-width:none; flex-shrink:0; }
+  .member-row::-webkit-scrollbar { display:none; }
+  .member-chip { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
+  .member-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; flex-shrink:0; border:3px solid transparent; transition:.2s; }
+  .member-avatar.active { border-color:var(--purple-mid); }
+  .member-name { font-size:10px; color:var(--gray-600); font-weight:600; }
+
+  .expense-list { padding:0 16px; display:flex; flex-direction:column; gap:8px; }
+  .expense-item { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--gray-100); border-radius:14px; }
+  .expense-icon { font-size:20px; }
+  .expense-info { flex:1; }
+  .expense-name { font-size:13px; font-weight:700; color:var(--purple-deep); }
+  .expense-paid { font-size:11px; color:var(--gray-400); }
+  .expense-amount { font-size:14px; font-weight:800; color:var(--purple-deep); }
+
+  .neteo-section { padding:16px 16px 8px; }
+  .neteo-title { font-size:14px; font-weight:800; color:var(--purple-deep); margin-bottom:10px; }
+  .neteo-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:14px; margin-bottom:8px; cursor:pointer; transition:.2s; }
+  .neteo-item.mine { background:rgba(224,65,154,.08); border:1px solid rgba(224,65,154,.2); }
+  .neteo-item.other { background:var(--gray-100); }
+  .neteo-item:hover { transform:translateX(2px); }
+  .neteo-avatar { width:32px; height:32px; border-radius:50%; font-size:12px; display:flex; align-items:center; justify-content:center; color:white; flex-shrink:0; font-weight:900; }
+  .neteo-text { flex:1; font-size:12px; color:var(--gray-600); }
+  .neteo-text strong { color:var(--purple-deep); }
+  .neteo-amount { font-size:14px; font-weight:800; color:var(--pink); }
+  .neteo-arrow { color:var(--gray-400); font-size:16px; }
+
+  .form-body { padding:8px 16px 16px; }
+  .form-group { margin-bottom:14px; }
+  .form-label { font-size:12px; font-weight:700; color:var(--gray-600); margin-bottom:6px; display:block; }
+  .form-input { width:100%; padding:12px 14px; border:2px solid var(--gray-200); border-radius:14px; font-size:14px; font-family:var(--font); transition:.2s; outline:none; background:white; }
+  .form-input:focus { border-color:var(--purple-mid); }
+  .form-input.amount { font-size:22px; font-weight:800; color:var(--purple-deep); }
+  .form-select { width:100%; padding:12px 14px; border:2px solid var(--gray-200); border-radius:14px; font-size:14px; background:white; cursor:pointer; outline:none; }
+  .category-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .cat-chip { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; border-radius:12px; cursor:pointer; border:2px solid var(--gray-200); transition:.2s; background:white; }
+  .cat-chip.selected { border-color:var(--purple-mid); background:rgba(91,45,158,.06); }
+  .cat-icon { font-size:20px; }
+  .cat-label { font-size:9px; color:var(--gray-600); font-weight:700; }
+
+  .btn-primary { display:flex; align-items:center; justify-content:center; gap:8px; width:calc(100% - 32px); margin:0 16px; background:var(--gradient); color:white; border:none; border-radius:20px; padding:16px; font-size:16px; font-weight:800; cursor:pointer; transition:.2s; box-shadow:0 4px 20px rgba(91,45,158,.3); flex-shrink:0; }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(91,45,158,.4); }
+  .btn-secondary { display:flex; align-items:center; justify-content:center; width:calc(100% - 32px); margin:10px 16px 0; background:none; color:var(--purple-mid); border:none; padding:12px; font-size:14px; font-weight:700; cursor:pointer; }
+  .btn-outline { display:flex; align-items:center; justify-content:center; gap:8px; flex:1; background:white; color:var(--purple-mid); border:2px solid var(--purple-mid); border-radius:16px; padding:12px; font-size:14px; font-weight:800; cursor:pointer; }
+
+  .debt-card { margin:8px 16px 16px; background:var(--gradient); border-radius:20px; padding:20px; color:white; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+  .debt-label { font-size:12px; opacity:.88; margin-bottom:4px; }
+  .debt-amount { font-size:34px; font-weight:950; letter-spacing:-1px; }
+  .debt-avatar { width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.4); background:white; display:flex; align-items:center; justify-content:center; font-size:26px; }
+
+  .balance-widget { margin:0 16px 12px; padding:14px 16px; background:var(--gray-100); border-radius:14px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .balance-icon { font-size:24px; }
+  .balance-info { flex:1; }
+  .balance-info .label { font-size:11px; color:var(--gray-600); }
+  .balance-info .value { font-size:18px; font-weight:900; color:var(--purple-mid); }
+
+  .detail-list { padding:0 16px; }
+  .detail-section-title { font-size:14px; font-weight:800; color:var(--purple-deep); margin:12px 0 8px; }
+  .detail-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--gray-200); }
+  .detail-item:last-child { border-bottom:none; }
+  .detail-icon { font-size:16px; width:24px; text-align:center; }
+  .detail-key { font-size:13px; color:var(--gray-600); flex:1; }
+  .detail-val { font-size:13px; font-weight:700; color:var(--purple-deep); text-align:right; }
+
+  .privacy-note { margin:12px 16px; padding:12px 14px; background:rgba(91,45,158,.06); border-radius:14px; display:flex; gap:10px; align-items:flex-start; flex-shrink:0; }
+  .privacy-text { font-size:11px; color:var(--gray-600); line-height:1.5; }
+
+  .confirm-card { margin:12px 16px; background:var(--green-soft); border:1px solid #bfe9cb; border-radius:20px; padding:20px; display:flex; flex-direction:column; align-items:center; text-align:center; flex-shrink:0; }
+  .confirm-check { width:58px; height:58px; background:var(--green); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:12px; color:white; animation:pop-in .4s cubic-bezier(.175,.885,.32,1.275); }
+  @keyframes pop-in { 0%{transform:scale(0)} 100%{transform:scale(1)} }
+  .confirm-title { font-size:18px; font-weight:850; color:var(--green); margin-bottom:4px; }
+  .confirm-sub { font-size:12px; color:var(--gray-600); margin-bottom:12px; }
+  .confirm-amount { font-size:36px; font-weight:950; color:var(--green); letter-spacing:-1px; }
+  .confirm-to { font-size:12px; color:var(--gray-600); margin-top:2px; }
+  .balance-rows { width:100%; margin-top:16px; background:white; border-radius:14px; padding:8px 12px; }
+  .bal-row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+  .bal-row .key { color:var(--gray-600); }
+  .bal-row .val { font-weight:800; }
+  .bal-row .val.neg { color:var(--pink); }
+  .bal-row .val.pos { color:var(--purple-mid); }
+  .bal-row .val.green { color:var(--green); }
+  .bal-divider { border:none; border-top:1px solid var(--gray-200); margin:4px 0; }
+
+  .account-row { margin:8px 16px 12px; padding:14px 16px; background:white; border-radius:14px; border:1.5px solid var(--gray-200); display:flex; align-items:center; gap:12px; cursor:pointer; transition:.2s; flex-shrink:0; }
+  .bank-icon { font-size:24px; }
+  .bank-info { flex:1; }
+  .bank-name { font-size:14px; font-weight:800; color:var(--purple-deep); }
+  .bank-sub { font-size:11px; color:var(--gray-400); }
+  .monto-label { font-size:12px; font-weight:700; color:var(--gray-600); padding:0 16px; margin-bottom:6px; flex-shrink:0; }
+  .monto-input { margin:0 16px 8px; flex-shrink:0; }
+  .monto-input input { width:100%; padding:12px 14px; border:2px solid var(--gray-200); border-radius:14px; font-size:26px; font-weight:850; color:var(--purple-deep); font-family:var(--font); outline:none; transition:.2s; }
+  .monto-input input:focus { border-color:var(--purple-mid); }
+  .quick-amounts { display:flex; gap:8px; padding:0 16px 10px; flex-shrink:0; }
+  .qa-chip { padding:7px 10px; border-radius:20px; border:1.5px solid var(--gray-200); font-size:12px; font-weight:700; color:var(--gray-600); cursor:pointer; transition:.2s; flex:1; text-align:center; }
+  .qa-chip.active { border-color:var(--purple-mid); background:rgba(91,45,158,.08); color:var(--purple-mid); }
+  .other-amount { margin:0 16px 12px; padding:10px 14px; border:1.5px dashed var(--purple-light); border-radius:14px; text-align:center; color:var(--purple-mid); font-weight:800; font-size:13px; cursor:pointer; }
+  .tipo-label { font-size:12px; font-weight:700; color:var(--gray-600); padding:0 16px 8px; flex-shrink:0; }
+  .retiro-option { margin:0 16px 8px; padding:14px 16px; border-radius:16px; border:2px solid var(--gray-200); display:flex; align-items:center; gap:12px; cursor:pointer; transition:.2s; flex-shrink:0; }
+  .retiro-option.selected { border-color:var(--purple-mid); background:rgba(91,45,158,.04); }
+  .retiro-opt-icon { font-size:22px; }
+  .retiro-opt-info { flex:1; }
+  .retiro-opt-name { font-size:14px; font-weight:800; color:var(--purple-deep); }
+  .retiro-opt-sub { font-size:11px; color:var(--gray-400); }
+  .retiro-badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+  .retiro-badge.gratis { background:rgba(34,197,94,.12); color:var(--green); }
+  .retiro-badge.comision { background:rgba(224,65,154,.12); color:var(--pink); }
+  .radio { width:20px; height:20px; border-radius:50%; border:2px solid var(--gray-300); display:flex; align-items:center; justify-content:center; }
+  .radio.selected { border-color:var(--purple-mid); background:var(--purple-mid); }
+  .radio.selected::after { content:''; width:8px; height:8px; border-radius:50%; background:white; }
+
+  .resumen-card { margin:4px 16px 16px; padding:14px 16px; background:var(--gray-100); border-radius:16px; flex-shrink:0; }
+  .resumen-title { font-size:13px; font-weight:800; color:var(--purple-deep); margin-bottom:10px; }
+  .res-row { display:flex; justify-content:space-between; padding:4px 0; font-size:12px; }
+  .res-row .rk { color:var(--gray-600); }
+  .res-row .rv { font-weight:700; color:var(--purple-deep); }
+  .res-row .rv.comision { color:var(--pink); }
+  .res-row .rv.total { font-size:15px; font-weight:900; color:var(--green); }
+  .res-divider { border:none; border-top:1px solid var(--gray-200); margin:6px 0; }
+
+  .link-box { margin:0 16px 14px; border:1.5px solid var(--gray-200); border-radius:16px; padding:14px; background:var(--gray-50); color:var(--purple-mid); font-weight:800; font-size:13px; display:flex; align-items:center; gap:10px; }
+  .share-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:0 16px 16px; }
+  .share-option { border:1.5px solid var(--gray-200); border-radius:14px; padding:12px 4px; text-align:center; font-size:10px; color:var(--gray-600); font-weight:700; cursor:pointer; }
+  .share-option .share-icon { font-size:22px; margin-bottom:5px; }
+
+  .create-avatar { width:84px; height:84px; margin:4px auto 20px; border:2px dashed var(--gray-300); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--purple-mid); font-size:28px; background:var(--gray-100); }
+  .member-tags { display:flex; gap:7px; overflow-x:auto; padding-bottom:4px; }
+  .member-tag { display:flex; align-items:center; gap:6px; background:var(--gray-100); border-radius:999px; padding:5px 9px; font-size:11px; font-weight:700; color:var(--purple-deep); white-space:nowrap; }
+
+  .history-empty { text-align:center; padding:44px 24px; color:var(--gray-600); }
+  .history-empty .icon { font-size:42px; margin-bottom:12px; }
+  .history-card { display:flex; align-items:center; gap:12px; padding:12px 14px; background:white; border:1px solid var(--gray-200); border-radius:14px; margin-bottom:8px; cursor:pointer; }
+  .history-icon { width:42px; height:42px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:var(--gray-100); font-size:20px; }
+  .history-info { flex:1; }
+  .history-title { font-size:13px; font-weight:800; color:var(--purple-deep); }
+  .history-sub { font-size:11px; color:var(--gray-400); margin-top:2px; }
+  .history-amount { text-align:right; font-weight:900; font-size:14px; }
+
+  .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px); background:var(--purple-deep); color:white; padding:12px 24px; border-radius:20px; font-size:13px; font-weight:700; z-index:1000; transition:transform .3s cubic-bezier(.175,.885,.32,1.275); box-shadow:0 8px 32px rgba(0,0,0,.3); }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .hint { color:rgba(255,255,255,.55); font-size:12px; text-align:center; max-width:340px; line-height:1.5; }
+
+  /* Corrección final: todos los textos dentro de la tarjeta superior del grupo van en blanco */
+  .group-hero,
+  .group-hero *,
+  .group-hero .negative,
+  .group-hero .positive,
+  .group-hero .hero-stat-value,
+  .group-hero .hero-stat-label,
+  .group-hero-title,
+  .group-hero-sub {
+    color: #FFFFFF !important;
+    opacity: 1 !important;
+  }
+
+  @media(max-width:430px){ body{padding:8px} .phone{width:calc(100vw - 22px); height:calc(100vh - 86px); max-height:780px;} }
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="demo-wrapper">
+  <div class="demo-header"><div class="demo-dot"></div>Demo interactiva · Saldado</div>
+  <div class="phone"><div class="notch"></div><div id="app-root" class="screen active"></div></div>
+  <div id="nav-hint" class="hint">Toca “Comenzar” para entrar a la app · Demo interactiva de Saldado</div>
+</div>
+
+<script>
+const INITIAL_BALANCE = 128450;
+const DEBT_TO_DIEGO_INITIAL = 28690;
+const GROUP_TOTAL_INITIAL = 228450;
+const BANK_NAME = "Banco BCI";
+const BANK_SUB = "Cuenta Corriente · 1234";
+
+let state = {
+  screen: 'splash',
+  walletBalance: INITIAL_BALANCE,
+  groupTotal: GROUP_TOTAL_INITIAL,
+  myDebtToDiego: DEBT_TO_DIEGO_INITIAL,
+  franDebtToDiego: 7240,
+  tomasDebtToDiego: 20690,
+  valeDebtToDiego: 17690,
+  expenses: [
+    {icon:'🏡', name:'Alojamiento cabaña', paidBy:'Diego', amount:120000},
+    {icon:'🛒', name:'Comida supermercado', paidBy:'Fran', amount:38450},
+    {icon:'⛽', name:'Bencina', paidBy:'Tomás', amount:25000},
+    {icon:'♨️', name:'Entradas termas', paidBy:'Vale', amount:28000},
+    {icon:'☕', name:'Cafés y snacks', paidBy:'Tú', amount:17000}
+  ],
+  history: [],
+  currentRetiro: 'inmediato',
+  retiroMonto: 50000,
+  lastRetiro: null,
+  lastPayment: null,
+  draftGroupName: '',
+  draftGroupDescription: '',
+  customGroups: [],
+  lastCreatedGroup: null
+};
+
+function fmt(n){ return '$' + Math.round(n).toLocaleString('es-CL'); }
+function activeCreatedGroupName(){ return state.lastCreatedGroup?.name || 'Nuevo grupo'; }
+function activeCreatedGroupDesc(){ return state.lastCreatedGroup?.description || 'Sin descripción'; }
+function groupSlug(name){
+  return (name || 'nuevo-grupo')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-|-$/g,'');
+}
+function today(){
+  const d = new Date();
+  return d.toLocaleDateString('es-CL', { day:'numeric', month:'long', year:'numeric' });
+}
+function nowTime(){
+  const d = new Date();
+  return d.toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' });
+}
+function currentDateTime(){ return `${today()} · ${nowTime()}`; }
+
+function retiroCalc(){
+  const monto = Math.max(0, Number(state.retiroMonto)||0);
+  let comision = 0;
+  if(state.currentRetiro === 'inmediato'){
+    comision = Math.round(monto * 0.012);
+    comision = Math.max(300, Math.min(1500, comision));
+    if(monto === 0) comision = 0;
+  }
+  return {
+    monto,
+    comision,
+    recibir: monto - comision,
+    restante: state.walletBalance - monto
+  };
+}
+
+function render(){
+  const root = document.getElementById('app-root');
+  root.className = 'screen active';
+  root.innerHTML = screens[state.screen]();
+  updateHint(state.screen);
+}
+function goTo(name){ state.screen = name; render(); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+function updateHint(name) {
+  const hints = {
+    splash:'Toca “Comenzar” para entrar a la app',
+    home:'Desde el inicio puedes ver tu saldo, grupos activos y acciones rápidas',
+    grupos:'Toca “Viaje a Pucon” o el botón + para crear un grupo',
+    'create-group':'Completa los datos del grupo y presiona “Crear grupo”',
+    'invite-link':'Copia o comparte el link para invitar miembros',
+    'group-detail':'Revisa gastos y toca tu deuda a Diego en pagos optimizados',
+    'add-expense':'Agrega un gasto. Si pagaste tú, se actualiza el resumen del grupo',
+    'pay-debt':'Toca “Pagar con wallet” para saldar la deuda con Diego',
+    'confirm-payment':'El pago queda saldado y se descuenta de tu saldo disponible',
+    'receipt-saved':'El comprobante queda guardado en historial',
+    retiro:'Elige monto, tipo de retiro y confirma',
+    'confirm-retiro':'Retiro exitoso con comprobante',
+    historial:'Aquí quedan guardados pagos y retiros realizados'
+  };
+  document.getElementById('nav-hint').textContent = hints[name] || 'Demo interactiva de Saldado';
+}
+
+function topSafe(){ return `<div class="top-safe"><span>9:41</span><span>▮▮  Wi‑Fi  ▰</span></div>`; }
+function appBar(title='Saldado'){
+  return `<div class="app-bar"><div class="app-bar-title"><div class="whale-logo">🐋</div>${title}</div><div class="app-bar-actions"><div class="icon-btn" onclick="goTo('historial')">🔔${state.history.length?'<div class="notif-dot"></div>':''}</div><div class="icon-btn" onclick="showToast('Perfil de usuario')">👤</div></div></div>`;
+}
+function header(title, back='home'){
+  return `${topSafe()}<div class="screen-header"><div class="back-btn" onclick="goTo('${back}')">‹</div><div class="screen-title">${title}</div></div>`;
+}
+function nav(active){
+  return `<div class="navbar">
+    <div class="nav-item ${active==='home'?'active':''}" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Inicio</span></div>
+    <div class="nav-item ${active==='grupos'?'active':''}" onclick="goTo('grupos')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3z"/></svg><span>Grupos</span></div>
+    <div class="nav-fab" onclick="goTo('create-group')">+</div>
+    <div class="nav-item ${active==='historial'?'active':''}" onclick="goTo('historial')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg><span>Historial</span></div>
+    <div class="nav-item" onclick="showToast('Perfil')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/></svg><span>Perfil</span></div>
+  </div>`;
+}
+
+function groupBalanceLabel(){
+  if(state.myDebtToDiego > 0) return `<div class="balance-label">Tú debes</div><div class="balance-amount negative">${fmt(state.myDebtToDiego)}</div>`;
+  return `<div class="balance-label">Te deben</div><div class="balance-amount positive">${fmt(Math.abs(state.myDebtToDiego))}</div>`;
+}
+function heroBalance(){
+  if(state.myDebtToDiego > 0) return `<div class="hero-stat-label">Tu balance</div><div class="hero-stat-value negative">Tú debes ${fmt(state.myDebtToDiego)}</div>`;
+  return `<div class="hero-stat-label">Tu balance</div><div class="hero-stat-value positive">Te deben ${fmt(Math.abs(state.myDebtToDiego))}</div>`;
+}
+
+const screens = {
+  splash: () => `${topSafe()}<div class="splash-screen"><div class="splash-whale">🐋</div><div class="splash-name">Saldado</div><div class="splash-tag">No solo calculamos,<br><span>dejamos todo saldado.</span></div><button class="splash-btn" onclick="goTo('home')">Comenzar →</button></div>`,
+
+  home: () => `${topSafe()}${appBar()}
+    <div class="scroll-area">
+      <div class="wallet-card"><div class="wallet-label">💳 Saldo disponible</div><div class="wallet-amount">${fmt(state.walletBalance)}</div><div class="wallet-sub">Wallet Saldado</div></div>
+      <div class="section-header"><div class="section-title">Acciones rápidas</div></div>
+      <div class="quick-actions">
+        <div class="qa-btn" onclick="goTo('create-group')"><div class="qa-icon purple">👥</div><span>Crear grupo</span></div>
+        <div class="qa-btn" onclick="goTo('pay-debt')"><div class="qa-icon pink">💸</div><span>Pagar deuda</span></div>
+        <div class="qa-btn" onclick="goTo('retiro')"><div class="qa-icon teal">🏧</div><span>Retirar</span></div>
+        <div class="qa-btn" onclick="goTo('historial')"><div class="qa-icon blue">📋</div><span>Historial</span></div>
+      </div>
+      <div class="section-header"><div class="section-title">Grupos activos</div><div class="section-link" onclick="goTo('grupos')">Ver todos</div></div>
+      <div class="group-list">
+        ${state.customGroups.map(g => `<div class="group-item" onclick="showToast('Grupo creado: ${g.name}')"><div class="group-avatar">👥</div><div class="group-info"><div class="group-name">${g.name}</div><div class="group-sub">1 miembro · esperando invitados</div></div><div class="group-balance"><div class="balance-label">Balance</div><div class="balance-amount positive">$0</div></div></div>`).join('')}
+        <div class="group-item" onclick="goTo('group-detail')"><div class="group-avatar">🏔️</div><div class="group-info"><div class="group-name">Viaje a Pucon 🌋</div><div class="group-sub">5 miembros</div></div><div class="group-balance">${groupBalanceLabel()}</div></div>
+        <div class="group-item" onclick="showToast('Grupo: Cumple Fran')"><div class="group-avatar">🎂</div><div class="group-info"><div class="group-name">Cumple Fran 🎉</div><div class="group-sub">6 miembros</div></div><div class="group-balance"><div class="balance-label">Tú debes</div><div class="balance-amount negative">$8.200</div></div></div>
+        <div class="group-item" onclick="showToast('Grupo: Depto roomies')"><div class="group-avatar">🏠</div><div class="group-info"><div class="group-name">Depto roomies 🏠</div><div class="group-sub">3 miembros</div></div><div class="group-balance"><div class="balance-label">Te deben</div><div class="balance-amount positive">$12.500</div></div></div>
+      </div>
+      <div class="retiro-info" onclick="goTo('retiro')"><div style="font-size:22px;">🏦</div><div class="retiro-info-text">Retiro estándar 24-48h: <span class="gratis">gratis</span><br>Retiro inmediato: <span class="comision">1,2% comisión</span></div><div style="color:var(--gray-400);font-size:18px;">›</div></div>
+    </div>${nav('home')}`,
+
+  grupos: () => `${topSafe()}<div class="app-bar"><div class="app-bar-title" style="font-size:22px;font-weight:900;">Grupos</div><div class="nav-fab" style="width:38px;height:38px;font-size:22px;" onclick="goTo('create-group')">+</div></div>
+    <div style="padding:0 16px 10px;"><input class="form-input" placeholder="🔍  Buscar grupos" style="background:var(--gray-100);border-color:transparent;" readonly></div>
+    <div class="tabs"><div class="tab active">Todos</div><div class="tab">Activos</div><div class="tab">Archivados</div></div>
+    <div class="scroll-area"><div class="group-list" style="padding-top:8px;">
+      ${state.customGroups.map(g => `<div class="group-item" onclick="showToast('Grupo creado: ${g.name}')"><div class="group-avatar">👥</div><div class="group-info"><div class="group-name">${g.name}</div><div class="group-sub">1 miembro · esperando invitados · Creado hoy</div></div><div class="group-balance"><div class="balance-label">Balance</div><div class="balance-amount positive">$0</div></div></div>`).join('')}
+      <div class="group-item" onclick="goTo('group-detail')"><div class="group-avatar">🏔️</div><div class="group-info"><div class="group-name">Viaje a Pucon 🌋</div><div class="group-sub">5 miembros · Actualizado hoy</div></div><div class="group-balance">${groupBalanceLabel()}</div></div>
+      <div class="group-item"><div class="group-avatar">🎂</div><div class="group-info"><div class="group-name">Cumple Fran 🎉</div><div class="group-sub">6 miembros</div></div><div class="group-balance"><div class="balance-label">Tú debes</div><div class="balance-amount negative">$8.200</div></div></div>
+      <div class="group-item"><div class="group-avatar">🏠</div><div class="group-info"><div class="group-name">Depto roomies 🏠</div><div class="group-sub">3 miembros</div></div><div class="group-balance"><div class="balance-label">Te deben</div><div class="balance-amount positive">$12.500</div></div></div>
+    </div></div>${nav('grupos')}`,
+
+  'create-group': () => `${header('Crear grupo','grupos')}<div class="scroll-area"><div class="create-avatar">📷</div><div class="form-body">
+    <div class="form-group"><label class="form-label">Nombre del grupo</label><input class="form-input" id="group-name-input" placeholder="Ej: Cumple, viaje, asado..." value="${state.draftGroupName}" oninput="state.draftGroupName=this.value"></div>
+    <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="group-desc-input" placeholder="Ej: Gastos compartidos del grupo" value="${state.draftGroupDescription}" oninput="state.draftGroupDescription=this.value"></div>
+    <div class="form-group">
+      <label class="form-label">Miembros</label>
+      <div class="retiro-info" style="margin:0;">
+        <div>🔗</div>
+        <div class="retiro-info-text">
+          <strong>Aún no hay miembros invitados</strong><br>
+          Después de crear el grupo, Saldado generará un link para compartir por WhatsApp.
+        </div>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Moneda</label><select class="form-select"><option>CLP $</option></select></div>
+    <div class="form-group"><label class="form-label">Tipo de división</label><select class="form-select"><option>Equitativa</option><option>Por porcentajes</option><option>Personalizada</option></select></div>
+    <div class="form-group"><label class="form-label">Categoría</label><select class="form-select"><option>Viaje</option></select></div>
+    <div class="retiro-info" style="margin:6px 0 0;"><div>🔗</div><div class="retiro-info-text"><strong>Generar link de invitación</strong><br>Al crear el grupo podrás enviarlo por WhatsApp, mensajes o correo.</div><div style="color:var(--green);font-size:24px;">●</div></div>
+    </div></div><button class="btn-primary" onclick="createGroup()">Crear grupo</button><div style="height:16px;"></div>`,
+
+  'invite-link': () => `${header('Invitar miembros','create-group')}<div class="scroll-area">
+    <div class="group-hero"><div class="group-hero-title">👥 ${activeCreatedGroupName()}</div><div class="group-hero-sub">Nuevo grupo · 1 miembro</div><div class="group-hero-stats"><div><div class="hero-stat-label">Total gastado</div><div class="hero-stat-value">$0</div></div><div><div class="hero-stat-label">Tu balance</div><div class="hero-stat-value">$0</div></div></div></div><div><div class="hero-stat-label">Total</div><div class="hero-stat-value">${fmt(state.groupTotal)}</div></div></div></div>
+    <div class="tabs"><div class="tab">Resumen</div><div class="tab">Actividad</div><div class="tab">Miembros</div><div class="tab active">Invitar</div></div>
+    <div style="padding:0 20px 12px;"><div style="font-size:24px;font-weight:900;color:var(--purple-deep);margin-bottom:6px;">Compartir link</div><div style="font-size:12px;color:var(--gray-600);line-height:1.45;">Envía este enlace por WhatsApp para que los demás se unan al grupo. Los miembros se agregan después de recibir el link.</div></div>
+    <div class="link-box">🔗 saldado.app/grupo/${groupSlug(activeCreatedGroupName())}-5829</div>
+    <div style="display:flex;gap:10px;padding:0 16px 16px;"><button class="btn-outline" onclick="showToast('Link copiado')">📋 Copiar link</button><button class="btn-primary" style="width:auto;flex:1;margin:0;" onclick="showToast('Link listo para enviar por WhatsApp')">🟢 Enviar por WhatsApp</button></div>
+    <div class="share-grid"><div class="share-option" onclick="showToast('Compartido por WhatsApp')"><div class="share-icon">🟢</div>WhatsApp</div><div class="share-option" onclick="showToast('Compartido por Mensajes')"><div class="share-icon">💬</div>Mensajes</div><div class="share-option" onclick="showToast('Compartido por Correo')"><div class="share-icon">✉️</div>Correo</div><div class="share-option" onclick="showToast('Link copiado')"><div class="share-icon">📋</div>Copiar</div></div>
+    </div><button class="btn-primary" onclick="goTo('grupos')">Ver en grupos</button><div style="height:16px;"></div>`,
+
+  'group-detail': () => `${header('Detalle del grupo','grupos')}<div class="scroll-area">
+    <div class="group-hero"><div class="group-hero-title">🏔️ Viaje a Pucon 🌋</div><div class="group-hero-sub">5 miembros</div><div class="group-hero-stats"><div><div class="hero-stat-label">Total gastado</div><div class="hero-stat-value">${fmt(state.groupTotal)}</div></div><div>${heroBalance()}</div></div></div>
+    <div class="tabs"><div class="tab active">Resumen</div><div class="tab">Gastos</div><div class="tab">Balances</div><div class="tab" onclick="goTo('invite-link')">Invitar</div></div>
+    <div class="member-row"><div class="member-chip"><div class="member-avatar active" style="background:var(--gradient);">Tú</div><div class="member-name">Tú</div></div><div class="member-chip"><div class="member-avatar" style="background:#E0419A;">Fr</div><div class="member-name">Fran</div></div><div class="member-chip"><div class="member-avatar" style="background:#5B2D9E;">Di</div><div class="member-name">Diego</div></div><div class="member-chip"><div class="member-avatar" style="background:#14B8A6;">Va</div><div class="member-name">Vale</div></div><div class="member-chip"><div class="member-avatar" style="background:#F59E0B;">To</div><div class="member-name">Tomás</div></div></div>
+    <div class="section-header"><div class="section-title">Gastos recientes</div></div>
+    <div class="expense-list">${state.expenses.map(e=>`<div class="expense-item"><div class="expense-icon">${e.icon}</div><div class="expense-info"><div class="expense-name">${e.name}</div><div class="expense-paid">Pagado por ${e.paidBy}</div></div><div class="expense-amount">${fmt(e.amount)}</div></div>`).join('')}</div>
+    <div class="neteo-section"><div class="neteo-title">⚡ Pagos optimizados</div>
+      ${state.myDebtToDiego > 0 ? `<div class="neteo-item mine" onclick="goTo('pay-debt')"><div class="neteo-avatar" style="background:var(--gradient);">Tú</div><div class="neteo-text"><strong>Tú</strong> debes pagar a Diego</div><div class="neteo-amount">${fmt(state.myDebtToDiego)}</div><div class="neteo-arrow">›</div></div>` : `<div class="neteo-item mine"><div class="neteo-avatar" style="background:var(--gradient);">Tú</div><div class="neteo-text"><strong>Diego</strong> debe pagarte</div><div class="neteo-amount positive">${fmt(Math.abs(state.myDebtToDiego))}</div></div>`}
+      <div class="neteo-item other"><div class="neteo-avatar" style="background:#E0419A;">Fr</div><div class="neteo-text"><strong>Fran</strong> debe pagar a Diego</div><div class="neteo-amount">${fmt(state.franDebtToDiego)}</div></div>
+      <div class="neteo-item other"><div class="neteo-avatar" style="background:#F59E0B;">To</div><div class="neteo-text"><strong>Tomás</strong> debe pagar a Diego</div><div class="neteo-amount">${fmt(state.tomasDebtToDiego)}</div></div>
+      <div class="neteo-item other"><div class="neteo-avatar" style="background:#14B8A6;">Va</div><div class="neteo-text"><strong>Vale</strong> debe pagar a Diego</div><div class="neteo-amount">${fmt(state.valeDebtToDiego)}</div></div>
+    </div></div><button class="btn-primary" onclick="goTo('add-expense')">➕ Agregar gasto</button><div style="height:16px;"></div>`,
+
+  'add-expense': () => `${header('Agregar gasto','group-detail')}<div class="scroll-area"><div class="form-body">
+    <div class="form-group"><label class="form-label">Categoría</label><div class="category-grid"><div class="cat-chip selected" onclick="selectCat(this)"><div class="cat-icon">🛍️</div><div class="cat-label">Compras</div></div><div class="cat-chip" onclick="selectCat(this)"><div class="cat-icon">🍽️</div><div class="cat-label">Comida</div></div><div class="cat-chip" onclick="selectCat(this)"><div class="cat-icon">🏠</div><div class="cat-label">Alojam.</div></div><div class="cat-chip" onclick="selectCat(this)"><div class="cat-icon">⛽</div><div class="cat-label">Bencina</div></div></div></div>
+    <div class="form-group"><label class="form-label">Concepto</label><input class="form-input" type="text" placeholder="Ej: comida, cena, bencina..." id="concepto-input"></div>
+    <div class="form-group"><label class="form-label">Monto</label><input class="form-input amount" type="text" placeholder="$0" id="monto-input" oninput="formatMonto(this)"></div>
+    <div class="form-group"><label class="form-label">¿Quién pagó?</label><select class="form-select" id="paidby-input"><option>Tú</option><option>Diego</option><option>Fran</option><option>Vale</option><option>Tomás</option></select></div>
+    <div class="form-group"><label class="form-label">Dividir entre</label><select class="form-select"><option>Todos los miembros</option><option>Seleccionar miembros</option></select></div>
+    <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="text" value="${today()}" readonly></div>
+    <div class="form-group"><label class="form-label">Notas (opcional)</label><input class="form-input" type="text" placeholder="Agrega una nota..."></div>
+    </div></div><button class="btn-primary" onclick="submitExpense()">Agregar gasto</button><div style="height:16px;"></div>`,
+
+  'pay-debt': () => `${header('Pagar deuda','group-detail')}<div class="scroll-area">
+    <div class="debt-card"><div><div class="debt-label">Debes pagar a Diego</div><div class="debt-amount">${fmt(state.myDebtToDiego)}</div></div><div class="debt-avatar">👨</div></div>
+    <div class="balance-widget"><div class="balance-icon">👛</div><div class="balance-info"><div class="label">Saldo disponible en tu wallet</div><div class="value">${fmt(state.walletBalance)}</div></div></div>
+    <button class="btn-primary" onclick="payDebt()">👛 Pagar con wallet</button>
+    <div style="text-align:center;font-size:11px;color:var(--gray-400);padding:8px 20px;">El pago será instantáneo dentro de Saldado.</div>
+    <div class="detail-list"><div class="detail-section-title">Detalles de la deuda</div><div class="detail-item"><div class="detail-icon">👥</div><div class="detail-key">Grupo</div><div class="detail-val">Viaje a Pucon 🌋</div></div><div class="detail-item"><div class="detail-icon">👤</div><div class="detail-key">Destinatario</div><div class="detail-val">Diego</div></div><div class="detail-item"><div class="detail-icon">💬</div><div class="detail-key">Comentario</div><div class="detail-val">Saldo optimizado</div></div></div>
+    <div class="privacy-note"><div>🔒</div><div class="privacy-text">Tu pago es privado y solo visible para los miembros del grupo.</div></div>
+    </div>`,
+
+  'confirm-payment': () => { const p=state.lastPayment || {amount:DEBT_TO_DIEGO_INITIAL,before:INITIAL_BALANCE,after:INITIAL_BALANCE-DEBT_TO_DIEGO_INITIAL,date:currentDateTime(),id:'SD-582941'}; return `${header('Pago realizado','group-detail')}<div class="scroll-area">
+    <div class="confirm-card"><div class="confirm-check">✓</div><div class="confirm-title">Pago con wallet exitoso</div><div class="confirm-sub">Tu deuda fue saldada al instante</div><div class="confirm-amount">${fmt(p.amount)}</div><div class="confirm-to">Enviado a <strong>Diego</strong></div>
+      <div class="balance-rows"><div class="bal-row"><span class="key">Saldo anterior</span><span class="val">${fmt(p.before)}</span></div><hr class="bal-divider"><div class="bal-row"><span class="key">Monto pagado</span><span class="val neg">-${fmt(p.amount)}</span></div><div class="bal-row"><span class="key">Saldo restante</span><span class="val pos">${fmt(p.after)}</span></div></div></div>
+    <div class="detail-list"><div class="detail-section-title">Comprobante</div><div class="detail-item"><div class="detail-icon">👥</div><div class="detail-key">Grupo</div><div class="detail-val">Viaje a Pucon 🌋</div></div><div class="detail-item"><div class="detail-icon">📅</div><div class="detail-key">Fecha</div><div class="detail-val">${p.date}</div></div><div class="detail-item"><div class="detail-icon">👛</div><div class="detail-key">Método</div><div class="detail-val">Wallet Saldado</div></div><div class="detail-item"><div class="detail-icon">🔖</div><div class="detail-key">ID transacción</div><div class="detail-val">${p.id}</div></div></div>
+    </div><button class="btn-primary" onclick="goTo('receipt-saved')">Guardar comprobante</button><button class="btn-secondary" onclick="showToast('Comprobante compartido')">Compartir comprobante</button><div style="height:16px;"></div>` },
+
+  'receipt-saved': () => { const p=state.lastPayment || {amount:28690,date:currentDateTime(),id:'SD-582941'}; return `${header('Comprobante guardado','historial')}<div class="scroll-area">
+    <div class="confirm-card"><div class="confirm-check">✓</div><div class="confirm-title">Pago guardado en historial</div><div class="confirm-sub">Tu comprobante de transacción fue guardado.</div><div class="confirm-amount">${fmt(p.amount)}</div><div class="confirm-to">Enviado a <strong>Diego</strong></div></div>
+    <div class="detail-list"><div class="detail-section-title">Detalle del comprobante</div><div class="detail-item"><div class="detail-icon">👥</div><div class="detail-key">Grupo</div><div class="detail-val">Viaje a Pucon 🌋</div></div><div class="detail-item"><div class="detail-icon">📅</div><div class="detail-key">Fecha</div><div class="detail-val">${p.date}</div></div><div class="detail-item"><div class="detail-icon">👛</div><div class="detail-key">Método</div><div class="detail-val">Wallet Saldado</div></div><div class="detail-item"><div class="detail-icon">✅</div><div class="detail-key">Estado</div><div class="detail-val" style="color:var(--green)">Guardado</div></div><div class="detail-item"><div class="detail-icon">🔖</div><div class="detail-key">ID</div><div class="detail-val">${p.id}</div></div></div>
+    <div class="privacy-note"><div>📁</div><div class="privacy-text"><strong>Guardado en historial</strong><br>Puedes encontrar este comprobante en Historial.</div></div>
+    </div><button class="btn-primary" onclick="goTo('historial')">Ver historial</button><button class="btn-secondary" onclick="goTo('home')">Volver al inicio</button><div style="height:16px;"></div>` },
+
+  retiro: () => { const c=retiroCalc(); return `${header('Retirar dinero','home')}<div class="scroll-area">
+    <div class="account-row"><div class="bank-icon">🏦</div><div class="bank-info"><div class="bank-name">${BANK_NAME}</div><div class="bank-sub">${BANK_SUB}</div></div><div style="color:var(--gray-400);font-size:20px;">›</div></div>
+    <div class="monto-label">Monto a retirar</div><div class="monto-input"><input type="text" value="${fmt(state.retiroMonto)}" id="retiro-input" oninput="onRetiroInput(this)"></div>
+    <div class="quick-amounts"><div class="qa-chip" onclick="setMonto(10000)">10.000</div><div class="qa-chip" onclick="setMonto(20000)">20.000</div><div class="qa-chip ${state.retiroMonto===50000?'active':''}" onclick="setMonto(50000)">50.000</div><div class="qa-chip" onclick="setMonto(state.walletBalance)">Máx.</div></div>
+    <div class="other-amount" onclick="setMonto(37000); showToast('Otro monto seleccionado: $37.000')">▢ Otro monto</div>
+    <div class="tipo-label">Tipo de retiro</div>
+    <div class="retiro-option ${state.currentRetiro==='estandar'?'selected':''}" onclick="selectRetiro('estandar')"><div class="retiro-opt-icon">🕐</div><div class="retiro-opt-info"><div class="retiro-opt-name">Retiro estándar</div><div class="retiro-opt-sub">24–48h</div></div><div class="retiro-badge gratis">Gratis</div><div class="radio ${state.currentRetiro==='estandar'?'selected':''}"></div></div>
+    <div class="retiro-option ${state.currentRetiro==='inmediato'?'selected':''}" onclick="selectRetiro('inmediato')"><div class="retiro-opt-icon">⚡</div><div class="retiro-opt-info"><div class="retiro-opt-name">Retiro inmediato</div><div class="retiro-opt-sub">Llega en minutos</div></div><div class="retiro-badge comision">1,2% comisión</div><div class="radio ${state.currentRetiro==='inmediato'?'selected':''}"></div></div>
+    <div class="resumen-card"><div class="resumen-title">Resumen del retiro</div><div class="res-row"><span class="rk">Saldo disponible</span><span class="rv">${fmt(state.walletBalance)}</span></div><div class="res-row"><span class="rk">Monto a retirar</span><span class="rv">${fmt(c.monto)}</span></div><div class="res-row"><span class="rk">Comisión</span><span class="rv comision">${c.comision>0?fmt(c.comision):'Sin comisión'}</span></div><hr class="res-divider"><div class="res-row"><span class="rk" style="font-weight:700;">Monto a recibir</span><span class="rv total">${fmt(c.recibir)}</span></div><div class="res-row"><span class="rk">Saldo restante</span><span class="rv">${fmt(c.restante)}</span></div></div>
+    </div><button class="btn-primary" onclick="confirmRetiro()">Confirmar retiro</button><div style="height:16px;"></div>` },
+
+  'confirm-retiro': () => { const r=state.lastRetiro || {monto:50000, comision:600, recibir:49400, before:128450, after:78450, type:'inmediato', date:currentDateTime(), id:'RT-842591'}; return `${header('Retiro realizado','retiro')}<div class="scroll-area">
+    <div class="confirm-card"><div class="confirm-check">✓</div><div class="confirm-title">Retiro exitoso</div><div class="confirm-sub">Tu dinero fue transferido correctamente</div><div class="confirm-amount">${fmt(r.recibir)}</div><div class="confirm-to">Transferido a tu cuenta bancaria</div>
+      <div class="balance-rows"><div class="bal-row"><span class="key">Saldo anterior</span><span class="val">${fmt(r.before)}</span></div><div class="bal-row"><span class="key">Monto solicitado</span><span class="val neg">-${fmt(r.monto)}</span></div><div class="bal-row"><span class="key">Comisión</span><span class="val neg">${r.comision>0?'-'+fmt(r.comision):'$0'}</span></div><hr class="bal-divider"><div class="bal-row"><span class="key">Monto recibido</span><span class="val green">${fmt(r.recibir)}</span></div><div class="bal-row"><span class="key">Saldo restante</span><span class="val pos">${fmt(r.after)}</span></div></div></div>
+    <div class="detail-list"><div class="detail-section-title">Comprobante</div><div class="detail-item"><div class="detail-icon">📅</div><div class="detail-key">Fecha</div><div class="detail-val">${r.date}</div></div><div class="detail-item"><div class="detail-icon">${r.type==='inmediato'?'⚡':'🕐'}</div><div class="detail-key">Método</div><div class="detail-val">Retiro ${r.type}</div></div><div class="detail-item"><div class="detail-icon">🏦</div><div class="detail-key">Banco</div><div class="detail-val">${BANK_NAME}</div></div><div class="detail-item"><div class="detail-icon">💳</div><div class="detail-key">Cuenta</div><div class="detail-val">${BANK_SUB}</div></div><div class="detail-item"><div class="detail-icon">🔖</div><div class="detail-key">N° transacción</div><div class="detail-val">${r.id}</div></div></div>
+    </div><button class="btn-primary" onclick="showToast('Comprobante compartido')">Compartir comprobante</button><button class="btn-secondary" onclick="goTo('home')">Volver al inicio</button><div style="height:16px;"></div>` },
+
+  historial: () => `${topSafe()}${appBar('Historial')}<div class="scroll-area">
+    <div style="padding:14px 20px 6px;"><div style="font-size:24px;font-weight:900;color:var(--purple-deep);">Movimientos</div><div style="font-size:12px;color:var(--gray-600);margin-top:4px;">Pagos y retiros realizados dentro de Saldado.</div></div>
+    <div class="group-list" style="padding-top:12px;">
+      ${state.history.length === 0 ? `<div class="history-empty"><div class="icon">📋</div><strong>No hay movimientos todavía</strong><br><span style="font-size:12px;">Cuando pagues una deuda o retires saldo, aparecerá aquí.</span></div>` : state.history.map(h => `<div class="history-card"><div class="history-icon">${h.icon}</div><div class="history-info"><div class="history-title">${h.title}</div><div class="history-sub">${h.date}<br>${h.detail}</div></div><div class="history-amount ${h.kind==='in'?'positive':'negative'}">${h.sign}${fmt(h.amount)}</div></div>`).join('')}
+    </div>
+    </div>${nav('historial')}`
+};
+
+function selectCat(el){ document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); }
+function formatMonto(input){ let val=input.value.replace(/[^0-9]/g,''); input.value = val ? fmt(parseInt(val)) : ''; }
+function onRetiroInput(input){ let val=input.value.replace(/[^0-9]/g,''); state.retiroMonto = val ? parseInt(val) : 0; render(); setTimeout(()=>{const i=document.getElementById('retiro-input'); if(i){i.focus(); i.setSelectionRange(i.value.length,i.value.length)}},0); }
+function setMonto(m){ state.retiroMonto = Math.min(m, state.walletBalance); render(); }
+function selectRetiro(tipo){ state.currentRetiro = tipo; render(); }
+
+
+
+function createGroup(){
+  const nameInput = document.getElementById('group-name-input');
+  const descInput = document.getElementById('group-desc-input');
+  const name = (nameInput?.value || '').trim();
+  const desc = (descInput?.value || '').trim();
+
+  if(!name){
+    showToast('Escribe un nombre para el grupo');
+    return;
+  }
+
+  const newGroup = {
+    name,
+    description: desc || 'Sin descripción',
+    members: ['Tú'],
+    splitType: 'Equitativa',
+    total: 0,
+    balance: 0,
+    createdAt: currentDateTime()
+  };
+
+  state.customGroups.unshift(newGroup);
+  state.lastCreatedGroup = newGroup;
+  state.draftGroupName = '';
+  state.draftGroupDescription = '';
+
+  showToast('Grupo creado. Ahora comparte el link por WhatsApp.');
+  setTimeout(()=>goTo('invite-link'), 450);
+}
+
+function submitExpense(){
+  const concepto = document.getElementById('concepto-input')?.value || 'Comida';
+  const raw = (document.getElementById('monto-input')?.value || '').replace(/[^0-9]/g,'');
+  const monto = raw ? parseInt(raw) : 10000;
+  const paidBy = document.getElementById('paidby-input')?.value || 'Tú';
+  const icon = concepto.toLowerCase().includes('comida') ? '🍽️' : '🛍️';
+  state.expenses.unshift({icon, name: concepto, paidBy, amount: monto});
+  state.groupTotal += monto;
+  const share = Math.round(monto / 5);
+  if(paidBy === 'Tú'){
+    // Si yo pago $10.000 en un grupo de 5, cada otra persona debe $2.000 más.
+    // En la demo se mantiene el neteo hacia Diego, por eso Fran/Tomás/Vale suben en $2.000.
+    state.myDebtToDiego = Math.max(0, state.myDebtToDiego - Math.round(monto * 4 / 5));
+    state.franDebtToDiego += share;
+    state.tomasDebtToDiego += share;
+    state.valeDebtToDiego += share;
+  } else if(paidBy === 'Diego') {
+    // Si Diego paga, todos deben su parte del gasto a Diego.
+    state.myDebtToDiego += share;
+    state.franDebtToDiego += share;
+    state.tomasDebtToDiego += share;
+    state.valeDebtToDiego += share;
+  } else if(paidBy === 'Fran') {
+    state.franDebtToDiego = Math.max(0, state.franDebtToDiego - Math.round(monto * 4 / 5));
+    state.myDebtToDiego += share;
+    state.tomasDebtToDiego += share;
+    state.valeDebtToDiego += share;
+  } else if(paidBy === 'Tomás') {
+    state.tomasDebtToDiego = Math.max(0, state.tomasDebtToDiego - Math.round(monto * 4 / 5));
+    state.myDebtToDiego += share;
+    state.franDebtToDiego += share;
+    state.valeDebtToDiego += share;
+  } else if(paidBy === 'Vale') {
+    state.valeDebtToDiego = Math.max(0, state.valeDebtToDiego - Math.round(monto * 4 / 5));
+    state.myDebtToDiego += share;
+    state.franDebtToDiego += share;
+    state.tomasDebtToDiego += share;
+  }
+  showToast(`Gasto agregado y saldos recalculados: ${concepto} ${fmt(monto)}`);
+  setTimeout(()=>goTo('group-detail'), 650);
+}
+
+function payDebt(){
+  const amount = state.myDebtToDiego;
+  if(amount <= 0){ showToast('No tienes deuda pendiente con Diego'); return; }
+  if(state.walletBalance < amount){ showToast('Saldo insuficiente'); return; }
+  const before = state.walletBalance;
+  state.walletBalance -= amount;
+  state.myDebtToDiego = 0;
+  const payment = {amount, before, after: state.walletBalance, date: currentDateTime(), id:'SD-' + Math.floor(100000 + Math.random()*899999)};
+  state.lastPayment = payment;
+  state.history.unshift({kind:'out', icon:'💸', title:'Pago a Diego', detail: 'Viaje a Pucon · Wallet Saldado', date: payment.date, amount, sign:'-'});
+  goTo('confirm-payment');
+}
+
+function confirmRetiro(){
+  const c = retiroCalc();
+  if(c.monto <= 0){ showToast('Ingresa un monto válido'); return; }
+  if(c.monto > state.walletBalance){ showToast('No tienes saldo suficiente'); return; }
+  const before = state.walletBalance;
+  state.walletBalance -= c.monto;
+  const retiro = {monto:c.monto, comision:c.comision, recibir:c.recibir, before, after:state.walletBalance, type:state.currentRetiro, date:currentDateTime(), id:'RT-' + Math.floor(100000 + Math.random()*899999)};
+  state.lastRetiro = retiro;
+  state.history.unshift({kind:'out', icon: state.currentRetiro==='inmediato'?'⚡':'🏦', title:`Retiro ${state.currentRetiro}`, detail:`${BANK_NAME} · ${BANK_SUB}`, date:retiro.date, amount:c.monto, sign:'-'});
+  goTo('confirm-retiro');
+}
+
+render();
+</script>
+</body>
+</html>
